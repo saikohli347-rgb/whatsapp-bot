@@ -5,31 +5,30 @@ from groq import Groq
 
 app = Flask(__name__)
 
-# Groq client
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
 @app.route("/")
 def home():
-    return "Mama Bot Live with Groq Free! 🔥"
+    return "Mama Bot Live!"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
     incoming_msg = request.values.get("Body", "")
-    print(f"User msg: {incoming_msg}")
+    print(f"Got msg: {incoming_msg}")
+    api_key = os.environ.get("GROQ_API_KEY")
+    print(f"Key exists: {bool(api_key)}")
 
     try:
+        client = Groq(api_key=api_key)
         chat = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "You are a friendly assistant. Always reply in Telugu slang using 'mama'. Keep it fun and helpful."},
+                {"role": "system", "content": "You are friendly Telugu assistant, reply in Telugu slang with 'mama'."},
                 {"role": "user", "content": incoming_msg}
             ]
         )
         reply_text = chat.choices[0].message.content
-        print(f"Bot reply: {reply_text}")
     except Exception as e:
-        print(f"Error: {e}")
-        reply_text = "Mama konchem technical issue, malli try chey mama!"
+        print(f"Groq Error Full: {e}")
+        reply_text = f"Mama error: {str(e)[:200]}"
 
     resp = MessagingResponse()
     resp.message(reply_text)
