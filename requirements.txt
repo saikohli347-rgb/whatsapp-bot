@@ -1,4 +1,4 @@
-Flask
-twilio
-pytz
-gunicorn
+Flask==2.3.3
+twilio==8.10.0
+openai==1.35.0
+requests==2.31.0
