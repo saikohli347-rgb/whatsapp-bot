@@ -1,34 +1,42 @@
+import os
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
-import openai
-import os
+from openai import OpenAI
 
 app = Flask(__name__)
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
-SYSTEM_PROMPT = "Nuvvu RJ TRENDZ shop assistant vi. Telugu lo friendly ga matladu mama, andi ani. Ravikamtham lo sarees, kurthis unnai ani cheppu."
+# Groq client - free & fast
+client = OpenAI(
+    api_key=os.environ.get("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
+)
 
-@app.route('/')
+@app.route("/")
 def home():
-    return "RJ TRENDZ BOT RUNNING MAMA!"
+    return "Mama Bot Live with Groq Free! 🔥"
 
-@app.route('/webhook', methods=['POST'])
+@app.route("/webhook", methods=["POST"])
 def webhook():
-    user_msg = request.values.get('Body', '')
-    resp = MessagingResponse()
+    incoming_msg = request.values.get("Body", "")
+    print(f"User: {incoming_msg}")
+
     try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_msg}
+                {"role": "system", "content": "You are a friendly assistant. Reply in Telugu slang like 'mama' style, helpful and fun."},
+                {"role": "user", "content": incoming_msg}
             ]
         )
-        reply = completion.choices[0].message.content
-        resp.message(reply)
+        reply_text = response.choices[0].message.content
+        print(f"Bot: {reply_text}")
+
     except Exception as e:
-        print(f"Error: {e}")
-        resp.message("Mama konchem technical issue, malli try cheyyi andi!")
+        print(f"Groq Error: {e}")
+        reply_text = "Mama Groq key check chey andi! Key thappu undi."
+
+    resp = MessagingResponse()
+    resp.message(reply_text)
     return str(resp)
 
 if __name__ == "__main__":
