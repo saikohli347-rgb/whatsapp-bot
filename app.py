@@ -1,60 +1,72 @@
 from flask import Flask, request
-from twilio.twiml.messaging_response import MessagingResponse
-from datetime import datetime
-import pytz
+import requests
+import os
+from openai import OpenAI
 
 app = Flask(__name__)
 
-SHOP_NAME = "RJ TRENDZ"
-ADDRESS = "Ravikamtham Village, Ravikamtham Mandalam"
-TIMINGS = "Morning 10:00 AM nundi Night 11:00 PM varuku"
-PRICES = "Shirts Rs.499 nundi, Pants Rs.799 nundi start"
+# === IDKKADA NUVVU MARCHALI ===
+WHATSAPP_TOKEN = "NUVVU_COPY_CHESINA_TEMP_TOKEN_IKKADA_PETTU"
+PHONE_NUMBER_ID = "NEE_PHONE_NUMBER_ID_IKKADA_PETTU"
+OPENAI_API_KEY = "NEE_OPENAI_API_KEY_IKKADA_PETTU"
+VERIFY_TOKEN = "rjtrendz123" # Idhi alaane unchanu
 
-def get_wish():
-    ist = pytz.timezone('Asia/Kolkata')
-    hour = datetime.now(ist).hour
-    if 5 <= hour < 12: return "Good Morning"
-    elif 12 <= hour < 17: return "Good Afternoon"
-    elif 17 <= hour < 21: return "Good Evening"
-    else: return "Good Night"
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-@app.route("/")
+# Shop gurinchi AI ki cheppu
+SYSTEM_PROMPT = """
+Nuvvu RJ TRENDZ, Ravikamtham lo unna best dress shop vi.
+Owner Ravi Anna.
+Nee style: Friendly Telugu lo matladu, 'mama', 'andi' ani piluvu.
+Collections: Sarees, Kurthis, Kids wear, Mens wear. Low price lo best quality.
+Address: Ravikamtham Main Road.
+Customer adigina daniki helpful ga reply ivvu. Ammakaniki try cheyyi.
+Short ga, 2-3 lines lo reply ivvu. Emojis vaddu ekkuva.
+"""
+
+@app.route('/')
 def home():
-    return f"{SHOP_NAME} Bot Live Undi!"
+    return "RJ TRENDZ AI BOT RUNNING MAMA!"
 
-@app.route("/whatsapp", methods=["POST"])
-def whatsapp():
-    incoming = request.values.get('Body', '').lower().strip()
-    resp = MessagingResponse()
-    msg = resp.message()
-    wish = get_wish()
+@app.route('/webhook', methods=['GET', 'POST'])
+def webhook():
+    if request.method == 'GET':
+        if request.args.get('hub.verify_token') == VERIFY_TOKEN:
+            return request.args.get('hub.challenge')
+        return "Verification failed"
 
-    # HI
-    if any(x in incoming for x in ["hi", "hello", "hey", "namaste", "hlo"]):
-        msg.body(f"{wish} 🙏\n\nWelcome to {SHOP_NAME} 👕\n\nMeeku emi kavali cheppandi:\n• Shirts / T-Shirts\n• Pants / Jeans\n• Price / Rate\n• Address / Location\n• Timings\n\nEdi adigina chepta bhayya!")
+    if request.method == 'POST':
+        data = request.json
+        try:
+            entry = data['entry'][0]['changes'][0]['value']
+            if 'messages' in entry:
+                msg = entry['messages'][0]
+                from_number = msg['from']
+                user_text = msg['text']['body']
 
-    # SHIRTS
-    elif any(x in incoming for x in ["shirt", "tshirt", "t-shirt"]):
-        msg.body(f"Shirts lo manadaggara:\n👕 Plain Shirts - Rs.499+\n👕 Colour Shirts - Rs.599+\n👕 Checks & Printed kuda undi\n\nSize? M, L, XL anni unnai bhayya!")
+                # OpenAI ki pampadam
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_text}
+                    ]
+                )
+                ai_reply = response.choices[0].message.content
 
-    # PANTS
-    elif any(x in incoming for x in ["pant", "jeans", "trouser"]):
-        msg.body(f"Pants lo manadaggara:\n👖 Jeans - Rs.799+\n👖 Formal Pants with Belt - Rs.899+\n👖 Black, Blue, Grey colours unnayi!")
+                # WhatsApp ki reply pampadam
+                url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
+                headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "to": from_number,
+                    "text": {"body": ai_reply}
+                }
+                requests.post(url, headers=headers, json=payload)
 
-    # PRICE
-    elif any(x in incoming for x in ["price", "rate", "cost", "entha", "dhara"]):
-        msg.body(f"Price Details 💰\n{PRICES}\n\nOffer kuda undi bhayya, shop ki vaste thaggistham!")
+        except Exception as e:
+            print(f"Error: {e}")
+        return "OK", 200
 
-    # ADDRESS / LOCATION
-    elif any(x in incoming for x in ["address", "location", "ekkada", "where"]):
-        msg.body(f"📍 {SHOP_NAME}\n{ADDRESS}\n\nRavikamtham main road lone bhayya!")
-
-    # TIMINGS
-    elif any(x in incoming for x in ["timing", "time", "open", "close"]):
-        msg.body(f"⏰ Timings: {TIMINGS}\nPrathi roju open bhayya!")
-
-    # SMART REPLY FOR ANY OTHER CLOTH QUESTION - No need to add code again!
-    else:
-        msg.body(f"{wish} bhayya! 🙏\n\nMeeru adigindi '{incoming}' ki sambandhinchi...\n\nManadaggara {SHOP_NAME} lo Shirts, Pants, Jeans anni trendy collection unnayi. {PRICES}. Meeku size, colour chepte pic kuda pedtham!\n\nShop ki okasari randi, nachina item teesukondi!")
-
-    return str(resp)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
