@@ -19,7 +19,7 @@ def webhook():
     try:
         client = Groq(api_key=api_key)
         chat = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are friendly Telugu assistant, reply in Telugu slang with 'mama'."},
                 {"role": "user", "content": incoming_msg}
