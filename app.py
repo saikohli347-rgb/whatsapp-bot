@@ -7,31 +7,26 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Mama Bot Live!"
+    return "Live!"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    incoming_msg = request.values.get("Body", "")
-    print(f"Got msg: {incoming_msg}")
-    api_key = os.environ.get("GROQ_API_KEY")
-    print(f"Key exists: {bool(api_key)}")
-
+    msg = request.values.get("Body", "")
     try:
-        client = Groq(api_key=api_key)
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         chat = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-20b",
             messages=[
-                {"role": "system", "content": "You are friendly Telugu assistant, reply in Telugu slang with 'mama'."},
-                {"role": "user", "content": incoming_msg}
+                {"role": "system", "content": "You are friendly Telugu assistant reply with mama slang"},
+                {"role": "user", "content": msg}
             ]
         )
-        reply_text = chat.choices[0].message.content
+        reply = chat.choices[0].message.content
     except Exception as e:
-        print(f"Groq Error Full: {e}")
-        reply_text = f"Mama error: {str(e)[:200]}"
-
+        print(f"Error: {e}")
+        reply = f"Error: {e}"
     resp = MessagingResponse()
-    resp.message(reply_text)
+    resp.message(reply)
     return str(resp)
 
 if __name__ == "__main__":
