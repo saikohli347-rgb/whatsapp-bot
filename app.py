@@ -3,7 +3,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from datetime import datetime
 import pytz
 app = Flask(__name__)
-SHOP_NAME = "RJ TRENDZ"
+SHOP_NAME = "SAI TRENDZ"
 ADDRESS = "Ravikamtham Village, Ravikamtham Mandalam"
 TIMINGS = "Morning 10:00 AM nundi Night 11:00 PM varuku"
 def get_wish():
