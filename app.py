@@ -11,8 +11,7 @@ PHONE_NUMBER_ID = "NEE_PHONE_NUMBER_ID_IKKADA_PETTU"
 OPENAI_API_KEY = "NEE_OPENAI_API_KEY_IKKADA_PETTU"
 VERIFY_TOKEN = "rjtrendz123" # Idhi alaane unchanu
 
-client = OpenAI(api_key=OPENAI_API_KEY)
-
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 # Shop gurinchi AI ki cheppu
 SYSTEM_PROMPT = """
 Nuvvu RJ TRENDZ, Ravikamtham lo unna best dress shop vi.
