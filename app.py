@@ -4,9 +4,9 @@ import openai
 import os
 
 app = Flask(__name__)
-openai.api_key = "NEE_OPENAI_KEY_IKKADA_PETTU"
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-SYSTEM_PROMPT = "Nuvvu RJ TRENDZ shop assistant vi. Telugu lo friendly ga matladu mama, andi ani. Ravikamtham lo sarees, kurthis ammuthav. Short ga reply ivvu."
+SYSTEM_PROMPT = "Nuvvu RJ TRENDZ shop assistant vi. Telugu lo friendly ga matladu mama, andi ani. Ravikamtham lo sarees, kurthis unnai ani cheppu."
 
 @app.route('/')
 def home():
@@ -24,9 +24,12 @@ def webhook():
                 {"role": "user", "content": user_msg}
             ]
         )
-        ai_reply = completion.choices[0].message.content
-        resp.message(ai_reply)
+        reply = completion.choices[0].message.content
+        resp.message(reply)
     except Exception as e:
-        print(e)
-        resp.message("Mama konchem busy ga unna, malla try cheyyi andi!")
+        print(f"Error: {e}")
+        resp.message("Mama konchem technical issue, malli try cheyyi andi!")
     return str(resp)
+
+if __name__ == "__main__":
+    app.run()
